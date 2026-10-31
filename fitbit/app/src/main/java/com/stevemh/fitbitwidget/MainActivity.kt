@@ -1,6 +1,8 @@
 package com.stevemh.fitbitwidget
 
 import android.os.Bundle
+import android.content.Intent
+import android.provider.Settings
 import android.graphics.Color
 import android.widget.*
 import androidx.activity.ComponentActivity
@@ -78,6 +80,18 @@ class MainActivity : ComponentActivity() {
                 edit.apply()
                 HealthWidget.refresh(this@MainActivity)
                 Toast.makeText(this@MainActivity, "Scores saved", Toast.LENGTH_SHORT).show()
+            }
+        })
+        note("Optional screen-reading test: Android Accessibility can read visible Google Health labels when you open the app. This is a diagnostic only; it does not collect scores yet. It reads only supported health app screens, keeps the result on this phone, and does not upload any screen content. Accessibility permission can expose sensitive on-screen information, so only enable it if you accept that risk.")
+        root.addView(Button(this).apply {
+            text = "Enable score diagnostic (Accessibility settings)"
+            setOnClickListener { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+        })
+        root.addView(Button(this).apply {
+            text = "Check score diagnostic"
+            setOnClickListener {
+                val result = prefs.getString("score_diagnostic", "No supported Google Health screen detected yet")
+                Toast.makeText(this@MainActivity, result, Toast.LENGTH_LONG).show()
             }
         })
         note("Background refresh is scheduled every two hours. Actual timing depends on Android battery management and Health Connect data availability.")
