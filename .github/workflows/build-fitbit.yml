@@ -1,0 +1,28 @@
+name: Build Fitbit Health Widget APK
+on:
+  push:
+    branches: [fitbit-health-widget]
+    paths: ['fitbit/**', '.github/workflows/build-fitbit.yml']
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Build APK
+        working-directory: fitbit
+        run: gradle :app:assembleDebug --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Fitbit-Health-Widget-APK
+          path: fitbit/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
