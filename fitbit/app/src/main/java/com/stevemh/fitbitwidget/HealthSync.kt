@@ -47,7 +47,15 @@ object HealthSync {
                 pageSize = 100
             )
         ).records
-        val latestSleep = sleeps.filter { java.time.Duration.between(it.startTime, it.endTime).toMinutes() >= 180 }.maxByOrNull { it.endTime }
+        val latestSleep = sleeps
+            .filter { java.time.Duration.between(it.startTime, it.endTime).toMinutes() >= 180 }
+            .filter {
+                val localStart = it.startTime.atZone(java.time.ZoneId.systemDefault())
+                val localEnd = it.endTime.atZone(java.time.ZoneId.systemDefault())
+                localStart.hour >= 18 || localStart.hour < 6 ||
+                    localEnd.hour in 4..12
+            }
+            .maxByOrNull { it.endTime }
         val hrvRecords = client.readRecords(
             ReadRecordsRequest(
                 recordType = HeartRateVariabilityRmssdRecord::class,
@@ -59,7 +67,16 @@ object HealthSync {
         val latestHrv = hrvRecords.maxByOrNull { it.time }
         val edit = prefs.edit()
         if (latestSleep != null) {
-            val mins = java.time.Duration.between(latestSleep.startTime, latestSleep.endTime).toMinutes()
+            val sleepStages = latestSleep.stages.filter {
+                it.stage != SleepSessionRecord.STAGE_TYPE_AWAKE &&
+                    it.stage != SleepSessionRecord.STAGE_TYPE_OUT_OF_BED &&
+                    it.stage != SleepSessionRecord.STAGE_TYPE_AWAKE_IN_BED
+            }
+            val mins = if (latestSleep.stages.isNotEmpty()) {
+                sleepStages.sumOf { java.time.Duration.between(it.startTime, it.endTime).toMinutes() }
+            } else {
+                java.time.Duration.between(latestSleep.startTime, latestSleep.endTime).toMinutes()
+            }
             edit.putString("duration", "${mins / 60} h ${mins % 60} m")
         }
         if (latestHrv != null) edit.putString("hrv", "${latestHrv.heartRateVariabilityMillis.toInt()} ms")
