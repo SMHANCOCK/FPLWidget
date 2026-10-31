@@ -47,7 +47,7 @@ object HealthSync {
                 pageSize = 100
             )
         ).records
-        val latestSleep = sleeps.maxByOrNull { it.endTime }
+        val latestSleep = sleeps.filter { java.time.Duration.between(it.startTime, it.endTime).toMinutes() >= 180 }.maxByOrNull { it.endTime }
         val hrvRecords = client.readRecords(
             ReadRecordsRequest(
                 recordType = HeartRateVariabilityRmssdRecord::class,
